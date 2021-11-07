@@ -1,0 +1,33 @@
+---
+- hosts: all
+  become: true
+  pre_tasks:
+  - name: Install EPEL 
+    dnf:
+      name: epel-release
+      state: present
+
+  - name: Install soft
+    dnf:
+      name: '{{ item }}'
+      state: present
+    loop: 
+    - openvpn
+    - iperf3
+    - git
+
+- hosts: server
+  name: Setup server
+  become: yes
+  roles:
+    - role: server
+
+
+- hosts: client
+  name: Setup client
+  become: yes
+  roles:
+    - role: client
+
+
+

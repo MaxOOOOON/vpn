@@ -1,0 +1,96 @@
+---
+- name: Selinux disable
+  selinux:
+      policy: targeted
+      state: permissive
+
+- name:  git checkout from github
+  git: 
+    repo: 'https://github.com/OpenVPN/easy-rsa'
+    dest: '{{ easyrsa_dest}}'
+
+- name: Initialize pki
+  command: ./easyrsa --batch init-pki
+  args: 
+    chdir: "{{easyrsa_dest}}/easyrsa3"
+
+- name: Build CA keys
+  command: ./easyrsa --batch build-ca nopass
+  args:
+    chdir: "{{easyrsa_dest}}/easyrsa3"
+
+- name: Build the DH (Diffie-Hellman) key
+  command: ./easyrsa gen-dh
+  args:
+    chdir: "{{easyrsa_dest}}/easyrsa3"
+
+- name: Generate the server certificate/key
+  command: ./easyrsa build-server-full server nopass
+  args:
+    chdir: "{{easyrsa_dest}}/easyrsa3"
+
+- name: Copy server certs
+  copy:
+    src: '{{ item }}'
+    dest: /etc/openvpn/server/
+    remote_src: true
+  loop:
+      - '{{easyrsa_dest}}/easyrsa3/pki/ca.crt'
+      - '{{easyrsa_dest}}/easyrsa3/pki/issued/'
+      - '{{easyrsa_dest}}/easyrsa3/pki/private/'
+      - '{{easyrsa_dest}}/easyrsa3/pki/dh.pem'
+
+- name: Server tun config copy
+  copy:
+    src: tun.conf
+    dest: /etc/openvpn/server/tun.conf
+
+- name: Server tap config copy
+  copy:
+    src: tap.conf
+    dest: /etc/openvpn/server/tap.conf
+
+- name: Check create client certificate
+  stat:
+    path: '{{easyrsa_dest}}/easyrsa3/pki/reqs/client1.req'
+  register: stat_result
+
+- name: Generate the client certificate/key
+  command: ./easyrsa --batch build-client-full client1 nopass
+  args: 
+    chdir: "{{easyrsa_dest}}/easyrsa3"
+  when: not stat_result.stat.exists
+
+- name: Copy client certs
+  copy:
+    src: '{{ item }}'
+    dest: /etc/openvpn/client/client1/
+    remote_src: true
+  loop:
+      - '{{easyrsa_dest}}/easyrsa3/pki/ca.crt'
+      - '{{easyrsa_dest}}/easyrsa3/pki/issued/client1.crt'
+      - '{{easyrsa_dest}}/easyrsa3/pki/private/client1.key'
+    
+
+- name: Fetch keys for client
+  fetch: 
+      src: '{{ item }}'
+      dest: "buffer/"
+      flat: yes
+  loop:
+    - '{{easyrsa_dest}}/easyrsa3/pki/ca.crt'
+    - '{{easyrsa_dest}}/easyrsa3/pki/issued/client1.crt'
+    - '{{easyrsa_dest}}/easyrsa3/pki/private/client1.key'
+
+
+- name: Start tun service
+  systemd:
+    name: openvpn-server@tun
+    state: restarted
+    enabled: true
+
+- name: Start tap service
+  systemd:
+    name: openvpn-server@tap
+    state: restarted
+    enabled: true

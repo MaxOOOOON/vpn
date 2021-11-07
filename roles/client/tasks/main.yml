@@ -1,0 +1,20 @@
+---
+- name: Client tun config copy
+  copy:
+    src: tun.ovpn
+    dest: /etc/openvpn/client/tun.ovpn
+
+- name: Client tap config copy
+  copy:
+    src: tap.ovpn
+    dest: /etc/openvpn/client/tap.ovpn
+
+
+- name: Copy the key add to authorized_keys using Ansible module
+  copy:
+    src: '{{ item }}'
+    dest: /etc/openvpn/client/
+  loop:
+    - 'buffer/ca.crt'
+    - 'buffer/client1.crt'
+    - 'buffer/client1.key'
