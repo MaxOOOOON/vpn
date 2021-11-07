@@ -1,3 +1,5 @@
 easyrsa_dest: /tmp/easy-rsa
 
-clients: ['client1', host]
+clients: 
+  - client1
+  - host

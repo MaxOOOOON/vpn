@@ -50,29 +50,46 @@
     src: tap.conf
     dest: /etc/openvpn/server/tap.conf
 
+
 - name: Check create client certificate
   stat:
-    path: '{{easyrsa_dest}}/easyrsa3/pki/reqs/client1.req'
+    path: '{{easyrsa_dest}}/easyrsa3/pki/reqs/{{item}}.req'
+  loop: '{{clients|list}}'
   register: stat_result
 
+
 - name: Generate the client certificate/key
-  command: ./easyrsa --batch build-client-full client1 nopass
+  command: ./easyrsa --batch build-client-full {{item.item}} nopass
   args: 
     chdir: "{{easyrsa_dest}}/easyrsa3"
-  when: not stat_result.stat.exists
+  when: not item.stat.exists
+  loop: "{{ stat_result.results }}"
 
-- name: Copy client certs
+
+#Copy certificates to client etc folders
+- name: 'Copy ca.crt'
   copy:
-    src: '{{ item }}'
-    dest: /etc/openvpn/client/client1/
+    src: '{{easyrsa_dest}}/easyrsa3/pki/ca.crt'
+    dest: '/etc/openvpn/client/{{item}}/'
     remote_src: true
-  loop:
-      - '{{easyrsa_dest}}/easyrsa3/pki/ca.crt'
-      - '{{easyrsa_dest}}/easyrsa3/pki/issued/client1.crt'
-      - '{{easyrsa_dest}}/easyrsa3/pki/private/client1.key'
-    
+  loop: '{{clients|list}}'
 
-- name: Fetch keys for client
+- name: 'Copy crt files'
+  copy:
+    src: '{{easyrsa_dest}}/easyrsa3/pki/issued/{{item}}.crt'
+    dest: '/etc/openvpn/client/{{item}}/'
+    remote_src: true
+  loop: '{{clients|list}}'
+  
+- name: 'Copy key files'
+  copy:
+    src: '{{easyrsa_dest}}/easyrsa3/pki/private/{{item}}.key'
+    dest: '/etc/openvpn/client/{{item}}/'
+    remote_src: true
+  loop: '{{clients|list}}'
+
+
+- name: Fetch keys for client1
   fetch: 
       src: '{{ item }}'
       dest: "buffer/"
@@ -81,6 +98,52 @@
     - '{{easyrsa_dest}}/easyrsa3/pki/ca.crt'
     - '{{easyrsa_dest}}/easyrsa3/pki/issued/client1.crt'
     - '{{easyrsa_dest}}/easyrsa3/pki/private/client1.key'
+
+
+- name: Server tun config copy
+  copy:
+    src: tap.ovpn
+    dest: /etc/openvpn/client/tap.ovpn
+
+#Generate config for host client
+- name: Fetch keys for host client
+  fetch: 
+      src: '{{ item }}'
+      dest: "buffer/"
+      flat: yes
+  loop:
+    - '{{easyrsa_dest}}/easyrsa3/pki/ca.crt'
+    - '{{easyrsa_dest}}/easyrsa3/pki/issued/host.crt'
+    - '{{easyrsa_dest}}/easyrsa3/pki/private/host.key'
+
+- name: '1'
+  blockinfile:
+    path: /etc/openvpn/client/tap.ovpn
+    insertafter: "^<ca>"
+    marker: "# {mark} ca.crt MARKER"
+    block: "{{ lookup('file', 'buffer/ca.crt') }}"
+
+- name: '2'
+  blockinfile:
+    path: /etc/openvpn/client/tap.ovpn
+    insertafter: "^<cert>"
+    marker: "# {mark} host.crt MARKER"
+    block: "{{ lookup('file', 'buffer/host.crt') }}"
+
+- name: '3'
+  blockinfile:
+    path: /etc/openvpn/client/tap.ovpn
+    insertafter: "^<key>"
+    marker: "# {mark} host.key MARKER"
+    block: "{{ lookup('file', 'buffer/host.key') }}"
+
+
+- name: Fetch profile for host client
+  fetch: 
+      src: /etc/openvpn/client/tap.ovpn
+      dest: "host-profile/"
+      flat: yes
+
 
 
 - name: Start tun service

@@ -6,14 +6,14 @@ MACHINES = {
         :box_name => "centos/8",
         :memory => 512,
         :net => [
-                   {ip: '10.20.0.1', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "net"},
+                   {ip: '10.30.0.1', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "net"},
                 ]
   },
   :client => {
         :box_name => "centos/8",
         :memory => 512,
         :net => [
-                   {ip: '10.20.0.2', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "net"},           
+                   {ip: '10.30.0.2', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "net"},           
                 ]
   },
 
@@ -36,10 +36,11 @@ Vagrant.configure("2") do |config|
                     vb.customize ["modifyvm", :id, "--memory", "512"]
             end        
 
-            # case boxname.to_s
-            # when "server"
-            # box.vm.network "forwarded_port", guest: 1194, host: 1194
-            # end
+            case boxname.to_s
+            when "server"
+            box.vm.network "forwarded_port", guest: 1194, host: 1194, protocol: "udp"
+            box.vm.network "forwarded_port", guest: 1194, host: 1194, protocol: "tcp"
+            end
             
             box.vm.provision :ansible do |ansible|
                 ansible.playbook = "./playbook.yml"

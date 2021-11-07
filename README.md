@@ -17,14 +17,26 @@
 
 ## Выполнение
 
+tun; tap: tap - L2, tun - L3
+
+Интерфейсы на сервере   
+
+![]()  
+
+
 Подключение к серверу на клиенте
 
-    openvpn /etc/openvpn/client/tun.ovpn &
+    sudo openvpn /etc/openvpn/client/tun.ovpn &
 
 либо 
 
-    openvpn /etc/openvpn/client/tap.ovpn &
+    sudo openvpn /etc/openvpn/client/tap.ovpn &
+
+![]()  
+
 
 Проверка с локальной машины
 
-    openvpn buffer/tap.ovpn
+    sudo openvpn host-profile/tap.ovpn &
+
+![]()  
