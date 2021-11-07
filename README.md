@@ -21,7 +21,7 @@ tun; tap: tap - L2, tun - L3
 
 Интерфейсы на сервере   
 
-![]()  
+![](https://github.com/MaxOOOOON/vpn/blob/main/pictures/Screenshot_20211107_235815.png)  
 
 
 Подключение к серверу на клиенте
@@ -32,11 +32,11 @@ tun; tap: tap - L2, tun - L3
 
     sudo openvpn /etc/openvpn/client/tap.ovpn &
 
-![]()  
+![](https://github.com/MaxOOOOON/vpn/blob/main/pictures/Screenshot_20211107_235844.png)  
 
 
 Проверка с локальной машины
 
     sudo openvpn host-profile/tap.ovpn &
 
-![]()  
+![](https://github.com/MaxOOOOON/vpn/blob/main/pictures/Screenshot_20211107_235904.png)  
